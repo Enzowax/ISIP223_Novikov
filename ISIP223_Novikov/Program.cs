@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace StoreInventory
 {
-    // Перечисление категорий товаров (на русском языке)
+    // Перечисление категорий товаров 
     enum Category
     {
         Еда,
@@ -121,3 +121,58 @@ namespace StoreInventory
                 }
             }
         }
+
+        // Добавление товара
+        static void AddProduct()
+        {
+            Console.Write("Введите название: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Введите цену: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal price) || price < 0)
+            {
+                Console.WriteLine("Некорректная цена!");
+                return;
+            }
+
+            Console.Write("Введите количество: ");
+            if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity < 0)
+            {
+                Console.WriteLine("Некорректное количество!");
+                return;
+            }
+
+            Console.WriteLine("Выберите категорию: 0 - Еда, 1 - Электроника, 2 - Одежда");
+            if (!Enum.TryParse(Console.ReadLine(), out Category category))
+            {
+                Console.WriteLine("Некорректная категория!");
+                return;
+            }
+
+            try
+            {
+                products.Add(new Product(name, price, quantity, category));
+                Console.WriteLine("Товар добавлен!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+        }
+
+        // Удаление товара
+        static void DeleteProduct()
+        {
+            Console.Write("Введите код товара для удаления: ");
+            if (int.TryParse(Console.ReadLine(), out int code))
+            {
+                var product = products.FirstOrDefault(p => p.Code == code);
+                if (product != null)
+                {
+                    products.Remove(product);
+                    Console.WriteLine("Товар удалён.");
+                }
+                else Console.WriteLine("Товар не найден!");
+            }
+        }
+
