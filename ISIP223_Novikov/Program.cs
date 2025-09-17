@@ -175,4 +175,69 @@ namespace StoreInventory
                 else Console.WriteLine("Товар не найден!");
             }
         }
+        // Заказ поставки (увеличение количества товара)
+        static void OrderProduct()
+        {
+            Console.Write("Введите код товара для поставки: ");
+            if (int.TryParse(Console.ReadLine(), out int code))
+            {
+                var product = products.FirstOrDefault(p => p.Code == code);
+                if (product != null)
+                {
+                    Console.Write("Введите количество: ");
+                    if (int.TryParse(Console.ReadLine(), out int amount) && amount > 0)
+                    {
+                        product.AddStock(amount);
+                        Console.WriteLine("Поставка добавлена!");
+                    }
+                }
+                else Console.WriteLine("Товар не найден!");
+            }
+        }
 
+        // Продажа товара
+        static void SellProduct()
+        {
+            Console.Write("Введите код товара для продажи: ");
+            if (int.TryParse(Console.ReadLine(), out int code))
+            {
+                var product = products.FirstOrDefault(p => p.Code == code);
+                if (product != null)
+                {
+                    Console.Write("Введите количество: ");
+                    if (int.TryParse(Console.ReadLine(), out int amount) && amount > 0)
+                    {
+                        if (product.Sell(amount))
+                            Console.WriteLine("Продажа выполнена!");
+                    }
+                }
+                else Console.WriteLine("Товар не найден!");
+            }
+        }
+
+        // Поиск товара по коду, названию или категории
+        static void SearchProduct()
+        {
+            Console.WriteLine("Введите параметр поиска (код/название/категория): ");
+            string query = Console.ReadLine().ToLower();
+
+            var results = products.Where(p =>
+                p.Code.ToString() == query ||
+                p.Name.ToLower().Contains(query) ||
+                p.Category.ToString().ToLower() == query);
+
+            foreach (var product in results)
+                Console.WriteLine(product);
+
+            if (!results.Any())
+                Console.WriteLine("Ничего не найдено!");
+        }
+
+        // Показать все товары
+        static void ShowAllProducts()
+        {
+            foreach (var product in products)
+                Console.WriteLine(product);
+        }
+    }
+}
