@@ -72,4 +72,52 @@ namespace StoreInventory
             }
         }
 
+        // Переопределение ToString() для красивого вывода
+        public override string ToString()
+        {
+            return $"Код: {Code}, Название: {Name}, Цена: {Price} руб, " +
+                   $"Количество: {Quantity}, В наличии: {(InStock ? "Да" : "Нет")}, " +
+                   $"Категория: {Category}";
+        }
+    }
 
+    class Program
+    {
+        static List<Product> products = new List<Product>(); // Список всех товаров
+
+        static void Main()
+        {
+            // Добавляем 5 тестовых товаров
+            products.Add(new Product("Хлеб", 30, 10, Category.Еда));
+            products.Add(new Product("Телефон", 15000, 3, Category.Электроника));
+            products.Add(new Product("Джинсы", 2500, 5, Category.Одежда));
+            products.Add(new Product("Молоко", 60, 8, Category.Еда));
+            products.Add(new Product("Наушники", 2000, 2, Category.Электроника));
+
+            // Основное меню программы
+            while (true)
+            {
+                Console.WriteLine("\n--- Учёт товаров в магазине ---");
+                Console.WriteLine("1. Добавить товар");
+                Console.WriteLine("2. Удалить товар");
+                Console.WriteLine("3. Заказать поставку");
+                Console.WriteLine("4. Продать товар");
+                Console.WriteLine("5. Поиск товара");
+                Console.WriteLine("6. Показать все товары");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите действие: ");
+
+                string choice = Console.ReadLine();
+                switch (choice)
+                {
+                    case "1": AddProduct(); break;
+                    case "2": DeleteProduct(); break;
+                    case "3": OrderProduct(); break;
+                    case "4": SellProduct(); break;
+                    case "5": SearchProduct(); break;
+                    case "6": ShowAllProducts(); break;
+                    case "0": return;
+                    default: Console.WriteLine("Неверный ввод!"); break;
+                }
+            }
+        }
