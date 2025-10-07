@@ -2,74 +2,162 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace StoreInventory
+namespace LibraryApp
 {
-    // Перечисление категорий товаров (на русском языке)
-    enum Category
+    class Program
     {
-        Еда,
-        Электроника,
-        Одежда
-    }
-
-    // Класс описывающий товар
-    class Product
-    {
-        private static int counter = 1; // Счётчик для генерации уникального кода
-        public int Code { get; private set; }        // Уникальный код товара
-        public string Name { get; private set; }     // Название товара
-        public decimal Price { get; private set; }   // Цена
-        public int Quantity { get; private set; }    // Количество на складе
-        public bool InStock => Quantity > 0;         // Есть ли товар в наличии
-        public Category Category { get; private set; } // Категория товара
-
-        // Конструктор
-        public Product(string name, decimal price, int quantity, Category category)
+        static void Main()
         {
-            // Проверка на корректность данных
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Название товара не может быть пустым!");
-            if (price < 0)
-                throw new ArgumentException("Цена не может быть отрицательной!");
-            if (quantity < 0)
-                throw new ArgumentException("Количество не может быть отрицательным!");
+            var library = new List<Book>
+            {
+                new Book("Война и мир", "Лев Толстой", "Роман", 1869, 500),
+                new Book("Преступление и наказание", "Фёдор Достоевский", "Роман", 1866, 450),
+                new Book("Мастер и Маргарита", "Михаил Булгаков", "Фантастика", 1967, 600),
+                new Book("Три мушкетёра", "Александр Дюма", "Приключения", 1844, 300),
+                new Book("Отцы и дети", "Иван Тургенев", "Роман", 1862, 400)
+            };
 
-            Code = counter++; // Автоматическая генерация кода
-            Name = name;
-            Price = price;
-            Quantity = quantity;
-            Category = category;
+            while (true)
+            {
+                Console.WriteLine("\nМеню:");
+                Console.WriteLine("1 - Добавить книгу");
+                Console.WriteLine("2 - Удалить книгу по Id");
+                Console.WriteLine("3 - Найти книги");
+                Console.WriteLine("4 - Отсортировать книги по названию");
+                Console.WriteLine("5 - Отсортировать книги по году");
+                Console.WriteLine("6 - Вывести самую дорогую и самую дешёвую книгу");
+                Console.WriteLine("7 - Сгруппировать книги по авторам");
+                Console.WriteLine("0 - Выход");
+                Console.Write("Выберите команду: ");
+
+                if (!int.TryParse(Console.ReadLine(), out int cmd)) continue;
+                if (cmd == 0) break;
+
+                switch (cmd)
+                {
+                    case 1:
+                        AddBook(library);
+                        break;
+                    case 2:
+                        RemoveBook(library);
+                        break;
+                    case 3:
+                        SearchBooks(library);
+                        break;
+                    case 4:
+                        var byTitle = library.OrderBy(b => b.Title);
+                        PrintBooks(byTitle);
+                        break;
+                    case 5:
+                        var byYear = library.OrderBy(b => b.Year);
+                        PrintBooks(byYear);
+                        break;
+                    case 6:
+                        var max = library.OrderByDescending(b => b.Price).First();
+                        var min = library.OrderBy(b => b.Price).First();
+                        Console.WriteLine($"Дорогая: {max}");
+                        Console.WriteLine($"Дешёвая: {min}");
+                        break;
+                    case 7:
+                        var grouped = library.GroupBy(b => b.Author);
+                        foreach (var g in grouped)
+                            Console.WriteLine($"{g.Key} -> {g.Count()} книг");
+                        break;
+                }
+            }
         }
 
-        // Метод для пополнения склада
-        public void AddStock(int amount)
+        static void AddBook(List<Book> library)
         {
-            if (amount <= 0)
+            Console.Write("Название: ");
+            string title = Console.ReadLine();
+
+            Console.Write("Автор: ");
+            string author = Console.ReadLine();
+
+            Console.Write("Жанр (Роман/Фантастика/Приключения): ");
+            string genre = Console.ReadLine();
+
+            Console.Write("Год издания: ");
+            if (!int.TryParse(Console.ReadLine(), out int year) || year < 0)
             {
-                Console.WriteLine("Количество должно быть положительным!");
+                Console.WriteLine("Некорректный год!");
                 return;
             }
-            Quantity += amount;
+
+            Console.Write("Цена: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal price) || price <= 0)
+            {
+                Console.WriteLine("Некорректная цена!");
+                return;
+            }
+
+            library.Add(new Book(title, author, genre, year, price));
+            Console.WriteLine("Книга добавлена!");
         }
 
-        // Метод для продажи товара
-        public bool Sell(int amount)
+        static void RemoveBook(List<Book> library)
         {
-            if (amount <= 0)
+            Console.Write("Введите Id для удаления: ");
+            if (!int.TryParse(Console.ReadLine(), out int id)) return;
+            var book = library.FirstOrDefault(b => b.Id == id);
+            if (book != null)
             {
-                Console.WriteLine("Количество должно быть положительным!");
-                return false;
+                library.Remove(book);
+                Console.WriteLine("Книга удалена.");
             }
-            if (Quantity >= amount)
-            {
-                Quantity -= amount;
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Недостаточно товара на складе!");
-                return false;
-            }
+            else Console.WriteLine("Книга не найдена.");
         }
 
+        static void SearchBooks(List<Book> library)
+        {
+            Console.WriteLine("Поиск: 1 - по названию, 2 - по автору, 3 - по жанру");
+            if (!int.TryParse(Console.ReadLine(), out int type)) return;
 
+            Console.Write("Введите значение: ");
+            string val = Console.ReadLine();
+
+            IEnumerable<Book> result = Enumerable.Empty<Book>();
+
+            if (type == 1)
+                result = library.Where(b => b.Title.Contains(val, StringComparison.OrdinalIgnoreCase));
+            else if (type == 2)
+                result = library.Where(b => b.Author.Contains(val, StringComparison.OrdinalIgnoreCase));
+            else if (type == 3)
+                result = library.Where(b => b.Genre.Contains(val, StringComparison.OrdinalIgnoreCase));
+
+            PrintBooks(result);
+        }
+
+        static void PrintBooks(IEnumerable<Book> books)
+        {
+            foreach (var b in books) Console.WriteLine(b);
+        }
+    }
+
+    class Book
+    {
+        private static int counter = 1;
+        public int Id { get; }
+        public string Title { get; }
+        public string Author { get; }
+        public string Genre { get; }
+        public int Year { get; }
+        public decimal Price { get; }
+
+        public Book(string title, string author, string genre, int year, decimal price)
+        {
+            Id = counter++;
+            Title = title;
+            Author = author;
+            Genre = genre;
+            Year = year;
+            Price = price;
+        }
+
+        public override string ToString()
+        {
+            return $"[{Id}] {Title}, {Author}, {Genre}, {Year}, {Price} руб.";
+        }
+    }
+}
