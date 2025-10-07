@@ -1,105 +1,163 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
-class TextStatistics
+namespace LibraryApp
 {
-    public string ShortestWord;
-    public string LongestWord;
-    public int WordCount;
-    public int SentenceCount;
-    public int VowelCount;
-    public int ConsonantCount;
-    public Dictionary<char, int> LetterFrequency = new Dictionary<char, int>();
-
-    // Вывод статистики по тексту
-    public void Print()
+    class Program
     {
-        Console.WriteLine("=== Статистика текста ===");
-        Console.WriteLine($"Количество слов: {WordCount}");
-        Console.WriteLine($"Количество предложений: {SentenceCount}");
-        Console.WriteLine($"Самое короткое слово: {ShortestWord}");
-        Console.WriteLine($"Самое длинное слово: {LongestWord}");
-        Console.WriteLine($"Гласных букв: {VowelCount}");
-        Console.WriteLine($"Согласных букв: {ConsonantCount}");
-        Console.WriteLine("Частота букв:");
-        foreach (var pair in LetterFrequency)
+        static void Main()
         {
-            Console.WriteLine($"{pair.Key}: {pair.Value}");
-        }
-    }
-}
-
-class Program
-{
-    // Проверка, является ли символ гласной
-    static bool IsVowel(char c)
-    {
-        char lower = Char.ToLower(c);
-        return "аеёиоуыэюя".IndexOf(lower) >= 0;
-    }
-
-    static TextStatistics AnalyzeText(string text)
-    {
-        TextStatistics stats = new TextStatistics();
-
-        string[] words = text.Split(new char[] { ' ', ',', '.', '!', '?', ';', ':', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-        stats.WordCount = words.Length;
-
-        // Поиск самого короткого и длинного слова
-        stats.ShortestWord = words[0];
-        stats.LongestWord = words[0];
-
-        for (int i = 0; i < words.Length; i++)
-        {
-            string w = words[i];
-            if (w.Length < stats.ShortestWord.Length) stats.ShortestWord = w;
-            if (w.Length > stats.LongestWord.Length) stats.LongestWord = w;
-        }
-
-        // Подсчёт предложений
-        string[] sentences = text.Split(new char[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-        stats.SentenceCount = sentences.Length;
-
-        // Подсчёт гласных и согласных + статистика по буквам
-        foreach (char c in text)
-        {
-            if (Char.IsLetter(c))
+            var library = new List<Book>
             {
-                char lower = Char.ToLower(c);
+                new Book("Война и мир", "Лев Толстой", "Роман", 1869, 500),
+                new Book("Преступление и наказание", "Фёдор Достоевский", "Роман", 1866, 450),
+                new Book("Мастер и Маргарита", "Михаил Булгаков", "Фантастика", 1967, 600),
+                new Book("Три мушкетёра", "Александр Дюма", "Приключения", 1844, 300),
+                new Book("Отцы и дети", "Иван Тургенев", "Роман", 1862, 400)
+            };
 
-                if (IsVowel(lower)) stats.VowelCount++;
-                else stats.ConsonantCount++;
+            while (true)
+            {
+                Console.WriteLine("\nМеню:");
+                Console.WriteLine("1 - Добавить книгу");
+                Console.WriteLine("2 - Удалить книгу по Id");
+                Console.WriteLine("3 - Найти книги");
+                Console.WriteLine("4 - Отсортировать книги по названию");
+                Console.WriteLine("5 - Отсортировать книги по году");
+                Console.WriteLine("6 - Вывести самую дорогую и самую дешёвую книгу");
+                Console.WriteLine("7 - Сгруппировать книги по авторам");
+                Console.WriteLine("0 - Выход");
+                Console.Write("Выберите команду: ");
 
-                if (!stats.LetterFrequency.ContainsKey(lower))
-                    stats.LetterFrequency[lower] = 0;
-                stats.LetterFrequency[lower]++;
+                if (!int.TryParse(Console.ReadLine(), out int cmd)) continue;
+                if (cmd == 0) break;
+
+                switch (cmd)
+                {
+                    case 1:
+                        AddBook(library);
+                        break;
+                    case 2:
+                        RemoveBook(library);
+                        break;
+                    case 3:
+                        SearchBooks(library);
+                        break;
+                    case 4:
+                        var byTitle = library.OrderBy(b => b.Title);
+                        PrintBooks(byTitle);
+                        break;
+                    case 5:
+                        var byYear = library.OrderBy(b => b.Year);
+                        PrintBooks(byYear);
+                        break;
+                    case 6:
+                        var max = library.OrderByDescending(b => b.Price).First();
+                        var min = library.OrderBy(b => b.Price).First();
+                        Console.WriteLine($"Дорогая: {max}");
+                        Console.WriteLine($"Дешёвая: {min}");
+                        break;
+                    case 7:
+                        var grouped = library.GroupBy(b => b.Author);
+                        foreach (var g in grouped)
+                            Console.WriteLine($"{g.Key} -> {g.Count()} книг");
+                        break;
+                }
             }
         }
 
-        return stats;
-    }
-
-    static void Main()
-    {
-        List<TextStatistics> history = new List<TextStatistics>();
-
-        while (true)
+        static void AddBook(List<Book> library)
         {
-            Console.WriteLine("\nВведите текст (минимум 100 символов):");
-            string input = Console.ReadLine();
+            Console.Write("Название: ");
+            string title = Console.ReadLine();
 
-            if (input.Length < 100)
+            Console.Write("Автор: ");
+            string author = Console.ReadLine();
+
+            Console.Write("Жанр (Роман/Фантастика/Приключения): ");
+            string genre = Console.ReadLine();
+
+            Console.Write("Год издания: ");
+            if (!int.TryParse(Console.ReadLine(), out int year) || year < 0)
             {
-                Console.WriteLine("Ошибка: текст слишком короткий!");
-                continue;
+                Console.WriteLine("Некорректный год!");
+                return;
             }
 
-            TextStatistics result = AnalyzeText(input);
-            history.Add(result);
+            Console.Write("Цена: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal price) || price <= 0)
+            {
+                Console.WriteLine("Некорректная цена!");
+                return;
+            }
 
-            result.Print();
+            library.Add(new Book(title, author, genre, year, price));
+            Console.WriteLine("Книга добавлена!");
+        }
 
+        static void RemoveBook(List<Book> library)
+        {
+            Console.Write("Введите Id для удаления: ");
+            if (!int.TryParse(Console.ReadLine(), out int id)) return;
+            var book = library.FirstOrDefault(b => b.Id == id);
+            if (book != null)
+            {
+                library.Remove(book);
+                Console.WriteLine("Книга удалена.");
+            }
+            else Console.WriteLine("Книга не найдена.");
+        }
+
+        static void SearchBooks(List<Book> library)
+        {
+            Console.WriteLine("Поиск: 1 - по названию, 2 - по автору, 3 - по жанру");
+            if (!int.TryParse(Console.ReadLine(), out int type)) return;
+
+            Console.Write("Введите значение: ");
+            string val = Console.ReadLine();
+
+            IEnumerable<Book> result = Enumerable.Empty<Book>();
+
+            if (type == 1)
+                result = library.Where(b => b.Title.Contains(val, StringComparison.OrdinalIgnoreCase));
+            else if (type == 2)
+                result = library.Where(b => b.Author.Contains(val, StringComparison.OrdinalIgnoreCase));
+            else if (type == 3)
+                result = library.Where(b => b.Genre.Contains(val, StringComparison.OrdinalIgnoreCase));
+
+            PrintBooks(result);
+        }
+
+        static void PrintBooks(IEnumerable<Book> books)
+        {
+            foreach (var b in books) Console.WriteLine(b);
+        }
+    }
+
+    class Book
+    {
+        private static int counter = 1;
+        public int Id { get; }
+        public string Title { get; }
+        public string Author { get; }
+        public string Genre { get; }
+        public int Year { get; }
+        public decimal Price { get; }
+
+        public Book(string title, string author, string genre, int year, decimal price)
+        {
+            Id = counter++;
+            Title = title;
+            Author = author;
+            Genre = genre;
+            Year = year;
+            Price = price;
+        }
+
+        public override string ToString()
+        {
+            return $"[{Id}] {Title}, {Author}, {Genre}, {Year}, {Price} руб.";
         }
     }
 }
