@@ -248,7 +248,7 @@ namespace UniversityManagement
             while (true)
             {
                 Console.WriteLine();
-                Console.WriteLine("=== University Management ===");
+                Console.WriteLine("Универ");
                 Console.WriteLine("1. Добавить студента");
                 Console.WriteLine("2. Просмотреть всех студентов");
                 Console.WriteLine("3. Добавить преподавателя");
