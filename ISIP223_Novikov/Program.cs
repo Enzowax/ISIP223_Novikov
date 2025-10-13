@@ -248,7 +248,7 @@ namespace UniversityManagement
             while (true)
             {
                 Console.WriteLine();
-                Console.WriteLine("Универ");
+                Console.WriteLine("=== University Management ===");
                 Console.WriteLine("1. Добавить студента");
                 Console.WriteLine("2. Просмотреть всех студентов");
                 Console.WriteLine("3. Добавить преподавателя");
@@ -291,4 +291,150 @@ namespace UniversityManagement
             }
         }
 
-       
+        static void AddStudent()
+        {
+            Console.Write("Имя студента: ");
+            var name = Console.ReadLine();
+            var age = ReadInt("Возраст: ");
+            Console.Write("Контакт: ");
+            var contact = Console.ReadLine();
+
+            var s = uni.AddStudent(name, age, contact);
+            Console.WriteLine($"Добавлен студент: {s}.");
+        }
+
+        static void ListStudents()
+        {
+            var list = uni.GetAllStudents().ToList();
+            if (!list.Any()) { Console.WriteLine("Студентов нет."); return; }
+            Console.WriteLine("Список студентов:");
+            foreach (var s in list)
+                Console.WriteLine($"{s.Name} | Id: {s.Id} | Age: {s.Age} | Contact: {s.Contact}");
+        }
+
+        static void AddTeacher()
+        {
+            Console.Write("Имя преподавателя: ");
+            var name = Console.ReadLine();
+            var age = ReadInt("Возраст: ");
+            Console.Write("Контакт: ");
+            var contact = Console.ReadLine();
+
+            var t = uni.AddTeacher(name, age, contact);
+            Console.WriteLine($"Добавлен преподаватель: {t}.");
+        }
+
+        static void ListTeachers()
+        {
+            var list = uni.GetAllTeachers().ToList();
+            if (!list.Any()) { Console.WriteLine("Преподавателей нет."); return; }
+            Console.WriteLine("Список преподавателей:");
+            foreach (var t in list)
+                Console.WriteLine($"{t.Name} | Id: {t.Id} | Age: {t.Age} | Contact: {t.Contact}");
+        }
+
+        static void AddCourse()
+        {
+            Console.Write("Название курса: ");
+            var title = Console.ReadLine();
+            Console.Write("Описание курса: ");
+            var desc = Console.ReadLine();
+
+            var c = uni.AddCourse(title, desc);
+            Console.WriteLine($"Добавлен курс: {c.Title} (Id: {c.Id})");
+        }
+
+        static void ListCourses()
+        {
+            var list = uni.GetAllCourses().ToList();
+            if (!list.Any()) { Console.WriteLine("Курсов нет."); return; }
+            Console.WriteLine("Список курсов:");
+            foreach (var c in list)
+            {
+                var teacher = c.TeacherId.HasValue ? (uni.FindTeacher(c.TeacherId.Value)?.Name ?? "Unknown") : "не назначен";
+                Console.WriteLine($"{c.Title} | Id: {c.Id} | Teacher: {teacher} | Students: {c.StudentIds.Count}");
+            }
+        }
+
+        static void AssignTeacher()
+        {
+            Console.WriteLine("Выберите преподавателя (Id):");
+            ListTeachers();
+            var tId = ReadGuid("Id преподавателя: ");
+            Console.WriteLine("Выберите курс (Id):");
+            ListCourses();
+            var cId = ReadGuid("Id курса: ");
+
+            var ok = uni.AssignTeacherToCourse(tId, cId);
+            Console.WriteLine(ok ? "Преподаватель назначен." : "Не удалось назначить.");
+        }
+
+        static void EnrollStudent()
+        {
+            Console.WriteLine("Выберите студента (Id):");
+            ListStudents();
+            var sId = ReadGuid("Id студента: ");
+            Console.WriteLine("Выберите курс (Id):");
+            ListCourses();
+            var cId = ReadGuid("Id курса: ");
+
+            var ok = uni.EnrollStudentToCourse(sId, cId);
+            Console.WriteLine(ok ? "Студент записан на курс." : "Не удалось записать.");
+        }
+
+        static void ShowStudentsInCourse()
+        {
+            Console.WriteLine("Выберите курс (Id):");
+            ListCourses();
+            var cId = ReadGuid("Id курса: ");
+            var students = uni.GetStudentsInCourse(cId).ToList();
+            if (!students.Any()) { Console.WriteLine("На курсе нет студентов."); return; }
+            Console.WriteLine("Студенты на курсе:");
+            foreach (var s in students)
+                Console.WriteLine($"{s.Name} | Id: {s.Id} | Contact: {s.Contact}");
+        }
+
+        static void ShowCoursesOfStudent()
+        {
+            Console.WriteLine("Выберите студента (Id):");
+            ListStudents();
+            var sId = ReadGuid("Id студента: ");
+            var courses = uni.GetCoursesOfStudent(sId).ToList();
+            if (!courses.Any()) { Console.WriteLine("У студента нет курсов."); return; }
+            Console.WriteLine("Курсы студента:");
+            foreach (var c in courses)
+                Console.WriteLine($"{c.Title} | Id: {c.Id} | Description: {c.Description}");
+        }
+
+        static void ShowAllLists()
+        {
+            Console.WriteLine("=== Все студенты ===");
+            ListStudents();
+            Console.WriteLine();
+            Console.WriteLine("=== Все преподаватели ===");
+            ListTeachers();
+            Console.WriteLine();
+            Console.WriteLine("=== Все курсы ===");
+            ListCourses();
+        }
+
+        static int ReadInt(string prompt)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                if (int.TryParse(Console.ReadLine(), out var val)) return val;
+                Console.WriteLine("Неверный ввод.");
+            }
+        }
+
+        static Guid ReadGuid(string prompt)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                var s = Console.ReadLine();
+                if (Guid.TryParse(s, out var id)) return id;
+                Console.WriteLine("Неверный GUID.");
+            }
+        }
