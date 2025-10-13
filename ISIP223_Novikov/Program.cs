@@ -6,14 +6,15 @@ namespace UniversityManagement
 {
     public abstract class Person
     {
-        public Guid Id { get; }
+        private static int nextId = 1;
+        public int Id { get; }
         public string Name { get; private set; }
         public int Age { get; private set; }
         public string Contact { get; private set; }
 
         protected Person(string name, int age, string contact)
         {
-            Id = Guid.NewGuid();
+            Id = nextId++;
             SetName(name);
             SetAge(age);
             SetContact(contact);
@@ -40,28 +41,28 @@ namespace UniversityManagement
 
         public override string ToString()
         {
-            return $"{Name} (Id: {Id.ToString().Substring(0, 8)}), Age: {Age}, Contact: {Contact}";
+            return $"{Name} (Id: {Id}), Age: {Age}, Contact: {Contact}";
         }
     }
 
     public class Student : Person
     {
-        private readonly List<Guid> courseIds = new List<Guid>();
+        private readonly List<int> courseIds = new List<int>();
 
         public Student(string name, int age, string contact) : base(name, age, contact) { }
 
-        internal void Enroll(Guid courseId)
+        internal void Enroll(int courseId)
         {
             if (!courseIds.Contains(courseId))
                 courseIds.Add(courseId);
         }
 
-        internal void Unenroll(Guid courseId)
+        internal void Unenroll(int courseId)
         {
             courseIds.Remove(courseId);
         }
 
-        public IReadOnlyCollection<Guid> CourseIds => courseIds.AsReadOnly();
+        public IReadOnlyCollection<int> CourseIds => courseIds.AsReadOnly();
 
         public override string ToString()
         {
@@ -71,22 +72,22 @@ namespace UniversityManagement
 
     public class Teacher : Person
     {
-        private readonly List<Guid> teachingCourseIds = new List<Guid>();
+        private readonly List<int> teachingCourseIds = new List<int>();
 
         public Teacher(string name, int age, string contact) : base(name, age, contact) { }
 
-        internal void AssignCourse(Guid courseId)
+        internal void AssignCourse(int courseId)
         {
             if (!teachingCourseIds.Contains(courseId))
                 teachingCourseIds.Add(courseId);
         }
 
-        internal void UnassignCourse(Guid courseId)
+        internal void UnassignCourse(int courseId)
         {
             teachingCourseIds.Remove(courseId);
         }
 
-        public IReadOnlyCollection<Guid> TeachingCourseIds => teachingCourseIds.AsReadOnly();
+        public IReadOnlyCollection<int> TeachingCourseIds => teachingCourseIds.AsReadOnly();
 
         public override string ToString()
         {
@@ -96,15 +97,16 @@ namespace UniversityManagement
 
     public class Course
     {
-        public Guid Id { get; }
+        private static int nextId = 1;
+        public int Id { get; }
         public string Title { get; private set; }
         public string Description { get; private set; }
-        public Guid? TeacherId { get; private set; }
-        private readonly List<Guid> studentIds = new List<Guid>();
+        public int? TeacherId { get; private set; }
+        private readonly List<int> studentIds = new List<int>();
 
         public Course(string title, string description)
         {
-            Id = Guid.NewGuid();
+            Id = nextId++;
             SetTitle(title);
             SetDescription(description);
         }
@@ -121,7 +123,7 @@ namespace UniversityManagement
             Description = description?.Trim() ?? string.Empty;
         }
 
-        internal void AssignTeacher(Guid teacherId)
+        internal void AssignTeacher(int teacherId)
         {
             TeacherId = teacherId;
         }
@@ -131,31 +133,31 @@ namespace UniversityManagement
             TeacherId = null;
         }
 
-        internal void AddStudent(Guid studentId)
+        internal void AddStudent(int studentId)
         {
             if (!studentIds.Contains(studentId))
                 studentIds.Add(studentId);
         }
 
-        internal void RemoveStudent(Guid studentId)
+        internal void RemoveStudent(int studentId)
         {
             studentIds.Remove(studentId);
         }
 
-        public IReadOnlyCollection<Guid> StudentIds => studentIds.AsReadOnly();
+        public IReadOnlyCollection<int> StudentIds => studentIds.AsReadOnly();
 
         public override string ToString()
         {
-            var teacherPart = TeacherId.HasValue ? $"TeacherId: {TeacherId.Value.ToString().Substring(0, 8)}" : "No teacher";
-            return $"Course: {Title} (Id: {Id.ToString().Substring(0, 8)}) - {teacherPart} - {studentIds.Count} students";
+            var teacherPart = TeacherId.HasValue ? $"TeacherId: {TeacherId}" : "No teacher";
+            return $"Course: {Title} (Id: {Id}) - {teacherPart} - {studentIds.Count} students";
         }
     }
 
     public class University
     {
-        private readonly Dictionary<Guid, Student> students = new Dictionary<Guid, Student>();
-        private readonly Dictionary<Guid, Teacher> teachers = new Dictionary<Guid, Teacher>();
-        private readonly Dictionary<Guid, Course> courses = new Dictionary<Guid, Course>();
+        private readonly Dictionary<int, Student> students = new();
+        private readonly Dictionary<int, Teacher> teachers = new();
+        private readonly Dictionary<int, Course> courses = new();
 
         public Student AddStudent(string name, int age, string contact)
         {
@@ -166,7 +168,7 @@ namespace UniversityManagement
 
         public IEnumerable<Student> GetAllStudents() => students.Values;
 
-        public Student FindStudent(Guid id) => students.TryGetValue(id, out var s) ? s : null;
+        public Student FindStudent(int id) => students.TryGetValue(id, out var s) ? s : null;
 
         public Teacher AddTeacher(string name, int age, string contact)
         {
@@ -177,7 +179,7 @@ namespace UniversityManagement
 
         public IEnumerable<Teacher> GetAllTeachers() => teachers.Values;
 
-        public Teacher FindTeacher(Guid id) => teachers.TryGetValue(id, out var t) ? t : null;
+        public Teacher FindTeacher(int id) => teachers.TryGetValue(id, out var t) ? t : null;
 
         public Course AddCourse(string title, string description)
         {
@@ -188,9 +190,9 @@ namespace UniversityManagement
 
         public IEnumerable<Course> GetAllCourses() => courses.Values;
 
-        public Course FindCourse(Guid id) => courses.TryGetValue(id, out var c) ? c : null;
+        public Course FindCourse(int id) => courses.TryGetValue(id, out var c) ? c : null;
 
-        public bool AssignTeacherToCourse(Guid teacherId, Guid courseId)
+        public bool AssignTeacherToCourse(int teacherId, int courseId)
         {
             var t = FindTeacher(teacherId);
             var c = FindCourse(courseId);
@@ -200,7 +202,7 @@ namespace UniversityManagement
             return true;
         }
 
-        public bool EnrollStudentToCourse(Guid studentId, Guid courseId)
+        public bool EnrollStudentToCourse(int studentId, int courseId)
         {
             var s = FindStudent(studentId);
             var c = FindCourse(courseId);
@@ -210,7 +212,7 @@ namespace UniversityManagement
             return true;
         }
 
-        public IEnumerable<Student> GetStudentsInCourse(Guid courseId)
+        public IEnumerable<Student> GetStudentsInCourse(int courseId)
         {
             var c = FindCourse(courseId);
             if (c == null) yield break;
@@ -221,7 +223,7 @@ namespace UniversityManagement
             }
         }
 
-        public IEnumerable<Course> GetCoursesOfStudent(Guid studentId)
+        public IEnumerable<Course> GetCoursesOfStudent(int studentId)
         {
             var s = FindStudent(studentId);
             if (s == null) yield break;
@@ -309,7 +311,7 @@ namespace UniversityManagement
             if (!list.Any()) { Console.WriteLine("Студентов нет."); return; }
             Console.WriteLine("Список студентов:");
             foreach (var s in list)
-                Console.WriteLine($"{s.Name} | Id: {s.Id} | Age: {s.Age} | Contact: {s.Contact}");
+                Console.WriteLine($"{s.Id}. {s.Name} | Age: {s.Age} | Contact: {s.Contact}");
         }
 
         static void AddTeacher()
@@ -330,7 +332,7 @@ namespace UniversityManagement
             if (!list.Any()) { Console.WriteLine("Преподавателей нет."); return; }
             Console.WriteLine("Список преподавателей:");
             foreach (var t in list)
-                Console.WriteLine($"{t.Name} | Id: {t.Id} | Age: {t.Age} | Contact: {t.Contact}");
+                Console.WriteLine($"{t.Id}. {t.Name} | Age: {t.Age} | Contact: {t.Contact}");
         }
 
         static void AddCourse()
@@ -352,7 +354,7 @@ namespace UniversityManagement
             foreach (var c in list)
             {
                 var teacher = c.TeacherId.HasValue ? (uni.FindTeacher(c.TeacherId.Value)?.Name ?? "Unknown") : "не назначен";
-                Console.WriteLine($"{c.Title} | Id: {c.Id} | Teacher: {teacher} | Students: {c.StudentIds.Count}");
+                Console.WriteLine($"{c.Id}. {c.Title} | Teacher: {teacher} | Students: {c.StudentIds.Count}");
             }
         }
 
@@ -360,10 +362,10 @@ namespace UniversityManagement
         {
             Console.WriteLine("Выберите преподавателя (Id):");
             ListTeachers();
-            var tId = ReadGuid("Id преподавателя: ");
+            var tId = ReadInt("Id преподавателя: ");
             Console.WriteLine("Выберите курс (Id):");
             ListCourses();
-            var cId = ReadGuid("Id курса: ");
+            var cId = ReadInt("Id курса: ");
 
             var ok = uni.AssignTeacherToCourse(tId, cId);
             Console.WriteLine(ok ? "Преподаватель назначен." : "Не удалось назначить.");
@@ -373,10 +375,10 @@ namespace UniversityManagement
         {
             Console.WriteLine("Выберите студента (Id):");
             ListStudents();
-            var sId = ReadGuid("Id студента: ");
+            var sId = ReadInt("Id студента: ");
             Console.WriteLine("Выберите курс (Id):");
             ListCourses();
-            var cId = ReadGuid("Id курса: ");
+            var cId = ReadInt("Id курса: ");
 
             var ok = uni.EnrollStudentToCourse(sId, cId);
             Console.WriteLine(ok ? "Студент записан на курс." : "Не удалось записать.");
@@ -386,24 +388,24 @@ namespace UniversityManagement
         {
             Console.WriteLine("Выберите курс (Id):");
             ListCourses();
-            var cId = ReadGuid("Id курса: ");
+            var cId = ReadInt("Id курса: ");
             var students = uni.GetStudentsInCourse(cId).ToList();
             if (!students.Any()) { Console.WriteLine("На курсе нет студентов."); return; }
             Console.WriteLine("Студенты на курсе:");
             foreach (var s in students)
-                Console.WriteLine($"{s.Name} | Id: {s.Id} | Contact: {s.Contact}");
+                Console.WriteLine($"{s.Id}. {s.Name} | Contact: {s.Contact}");
         }
 
         static void ShowCoursesOfStudent()
         {
             Console.WriteLine("Выберите студента (Id):");
             ListStudents();
-            var sId = ReadGuid("Id студента: ");
+            var sId = ReadInt("Id студента: ");
             var courses = uni.GetCoursesOfStudent(sId).ToList();
             if (!courses.Any()) { Console.WriteLine("У студента нет курсов."); return; }
             Console.WriteLine("Курсы студента:");
             foreach (var c in courses)
-                Console.WriteLine($"{c.Title} | Id: {c.Id} | Description: {c.Description}");
+                Console.WriteLine($"{c.Id}. {c.Title} | Description: {c.Description}");
         }
 
         static void ShowAllLists()
@@ -425,17 +427,6 @@ namespace UniversityManagement
                 Console.Write(prompt);
                 if (int.TryParse(Console.ReadLine(), out var val)) return val;
                 Console.WriteLine("Неверный ввод.");
-            }
-        }
-
-        static Guid ReadGuid(string prompt)
-        {
-            while (true)
-            {
-                Console.Write(prompt);
-                var s = Console.ReadLine();
-                if (Guid.TryParse(s, out var id)) return id;
-                Console.WriteLine("Неверный GUID.");
             }
         }
 
