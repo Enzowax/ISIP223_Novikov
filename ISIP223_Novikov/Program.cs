@@ -44,4 +44,251 @@ namespace UniversityManagement
         }
     }
 
-   
+    public class Student : Person
+    {
+        private readonly List<Guid> courseIds = new List<Guid>();
+
+        public Student(string name, int age, string contact) : base(name, age, contact) { }
+
+        internal void Enroll(Guid courseId)
+        {
+            if (!courseIds.Contains(courseId))
+                courseIds.Add(courseId);
+        }
+
+        internal void Unenroll(Guid courseId)
+        {
+            courseIds.Remove(courseId);
+        }
+
+        public IReadOnlyCollection<Guid> CourseIds => courseIds.AsReadOnly();
+
+        public override string ToString()
+        {
+            return $"Student: {base.ToString()}";
+        }
+    }
+
+    public class Teacher : Person
+    {
+        private readonly List<Guid> teachingCourseIds = new List<Guid>();
+
+        public Teacher(string name, int age, string contact) : base(name, age, contact) { }
+
+        internal void AssignCourse(Guid courseId)
+        {
+            if (!teachingCourseIds.Contains(courseId))
+                teachingCourseIds.Add(courseId);
+        }
+
+        internal void UnassignCourse(Guid courseId)
+        {
+            teachingCourseIds.Remove(courseId);
+        }
+
+        public IReadOnlyCollection<Guid> TeachingCourseIds => teachingCourseIds.AsReadOnly();
+
+        public override string ToString()
+        {
+            return $"Teacher: {base.ToString()}";
+        }
+    }
+
+    public class Course
+    {
+        public Guid Id { get; }
+        public string Title { get; private set; }
+        public string Description { get; private set; }
+        public Guid? TeacherId { get; private set; }
+        private readonly List<Guid> studentIds = new List<Guid>();
+
+        public Course(string title, string description)
+        {
+            Id = Guid.NewGuid();
+            SetTitle(title);
+            SetDescription(description);
+        }
+
+        public void SetTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new ArgumentException("Название курса не может быть пустым.");
+            Title = title.Trim();
+        }
+
+        public void SetDescription(string description)
+        {
+            Description = description?.Trim() ?? string.Empty;
+        }
+
+        internal void AssignTeacher(Guid teacherId)
+        {
+            TeacherId = teacherId;
+        }
+
+        internal void RemoveTeacher()
+        {
+            TeacherId = null;
+        }
+
+        internal void AddStudent(Guid studentId)
+        {
+            if (!studentIds.Contains(studentId))
+                studentIds.Add(studentId);
+        }
+
+        internal void RemoveStudent(Guid studentId)
+        {
+            studentIds.Remove(studentId);
+        }
+
+        public IReadOnlyCollection<Guid> StudentIds => studentIds.AsReadOnly();
+
+        public override string ToString()
+        {
+            var teacherPart = TeacherId.HasValue ? $"TeacherId: {TeacherId.Value.ToString().Substring(0, 8)}" : "No teacher";
+            return $"Course: {Title} (Id: {Id.ToString().Substring(0, 8)}) - {teacherPart} - {studentIds.Count} students";
+        }
+    }
+
+    public class University
+    {
+        private readonly Dictionary<Guid, Student> students = new Dictionary<Guid, Student>();
+        private readonly Dictionary<Guid, Teacher> teachers = new Dictionary<Guid, Teacher>();
+        private readonly Dictionary<Guid, Course> courses = new Dictionary<Guid, Course>();
+
+        public Student AddStudent(string name, int age, string contact)
+        {
+            var s = new Student(name, age, contact);
+            students[s.Id] = s;
+            return s;
+        }
+
+        public IEnumerable<Student> GetAllStudents() => students.Values;
+
+        public Student FindStudent(Guid id) => students.TryGetValue(id, out var s) ? s : null;
+
+        public Teacher AddTeacher(string name, int age, string contact)
+        {
+            var t = new Teacher(name, age, contact);
+            teachers[t.Id] = t;
+            return t;
+        }
+
+        public IEnumerable<Teacher> GetAllTeachers() => teachers.Values;
+
+        public Teacher FindTeacher(Guid id) => teachers.TryGetValue(id, out var t) ? t : null;
+
+        public Course AddCourse(string title, string description)
+        {
+            var c = new Course(title, description);
+            courses[c.Id] = c;
+            return c;
+        }
+
+        public IEnumerable<Course> GetAllCourses() => courses.Values;
+
+        public Course FindCourse(Guid id) => courses.TryGetValue(id, out var c) ? c : null;
+
+        public bool AssignTeacherToCourse(Guid teacherId, Guid courseId)
+        {
+            var t = FindTeacher(teacherId);
+            var c = FindCourse(courseId);
+            if (t == null || c == null) return false;
+            c.AssignTeacher(teacherId);
+            t.AssignCourse(courseId);
+            return true;
+        }
+
+        public bool EnrollStudentToCourse(Guid studentId, Guid courseId)
+        {
+            var s = FindStudent(studentId);
+            var c = FindCourse(courseId);
+            if (s == null || c == null) return false;
+            c.AddStudent(studentId);
+            s.Enroll(courseId);
+            return true;
+        }
+
+        public IEnumerable<Student> GetStudentsInCourse(Guid courseId)
+        {
+            var c = FindCourse(courseId);
+            if (c == null) yield break;
+            foreach (var sid in c.StudentIds)
+            {
+                var s = FindStudent(sid);
+                if (s != null) yield return s;
+            }
+        }
+
+        public IEnumerable<Course> GetCoursesOfStudent(Guid studentId)
+        {
+            var s = FindStudent(studentId);
+            if (s == null) yield break;
+            foreach (var cid in s.CourseIds)
+            {
+                var c = FindCourse(cid);
+                if (c != null) yield return c;
+            }
+        }
+    }
+
+    class Program
+    {
+        static University uni = new University();
+
+        static void Main(string[] args)
+        {
+            SeedSampleData();
+            RunMenu();
+        }
+
+        static void RunMenu()
+        {
+            while (true)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Универ");
+                Console.WriteLine("1. Добавить студента");
+                Console.WriteLine("2. Просмотреть всех студентов");
+                Console.WriteLine("3. Добавить преподавателя");
+                Console.WriteLine("4. Просмотреть всех преподавателей");
+                Console.WriteLine("5. Добавить курс");
+                Console.WriteLine("6. Просмотреть все курсы");
+                Console.WriteLine("7. Назначить преподавателя на курс");
+                Console.WriteLine("8. Записать студента на курс");
+                Console.WriteLine("9. Показать студентов на курсе");
+                Console.WriteLine("10. Показать курсы студента");
+                Console.WriteLine("11. Полные списки");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+                var choice = Console.ReadLine()?.Trim();
+
+                Console.WriteLine();
+                try
+                {
+                    switch (choice)
+                    {
+                        case "1": AddStudent(); break;
+                        case "2": ListStudents(); break;
+                        case "3": AddTeacher(); break;
+                        case "4": ListTeachers(); break;
+                        case "5": AddCourse(); break;
+                        case "6": ListCourses(); break;
+                        case "7": AssignTeacher(); break;
+                        case "8": EnrollStudent(); break;
+                        case "9": ShowStudentsInCourse(); break;
+                        case "10": ShowCoursesOfStudent(); break;
+                        case "11": ShowAllLists(); break;
+                        case "0": return;
+                        default: Console.WriteLine("Неверный выбор."); break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка: {ex.Message}");
+                }
+            }
+        }
+
+       
