@@ -408,13 +408,13 @@ namespace UniversityManagement
 
         static void ShowAllLists()
         {
-            Console.WriteLine("=== Все студенты ===");
+            Console.WriteLine("Все студенты");
             ListStudents();
             Console.WriteLine();
-            Console.WriteLine("=== Все преподаватели ===");
+            Console.WriteLine("Все преподаватели");
             ListTeachers();
             Console.WriteLine();
-            Console.WriteLine("=== Все курсы ===");
+            Console.WriteLine("Все курсы");
             ListCourses();
         }
 
