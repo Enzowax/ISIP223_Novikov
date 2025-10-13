@@ -438,3 +438,25 @@ namespace UniversityManagement
                 Console.WriteLine("Неверный GUID.");
             }
         }
+
+        static void SeedSampleData()
+        {
+            var t1 = uni.AddTeacher("Иван Петров", 45, "ivan.petrov@example.com");
+            var t2 = uni.AddTeacher("Мария Смирнова", 38, "m.smirnova@example.com");
+
+            var c1 = uni.AddCourse("Алгоритмы и структуры данных", "Базовый курс по алгоритмам.");
+            var c2 = uni.AddCourse("Базы данных", "Введение в реляционные СУБД и SQL.");
+            var c3 = uni.AddCourse("Операционные системы", "Основы ОС и управление процессами.");
+
+            uni.AssignTeacherToCourse(t1.Id, c1.Id);
+            uni.AssignTeacherToCourse(t2.Id, c2.Id);
+
+            var s1 = uni.AddStudent("Андрей Водяной", 20, "andrey@example.com");
+            var s2 = uni.AddStudent("Ольга Иванова", 19, "olga@example.com");
+
+            uni.EnrollStudentToCourse(s1.Id, c1.Id);
+            uni.EnrollStudentToCourse(s1.Id, c2.Id);
+            uni.EnrollStudentToCourse(s2.Id, c2.Id);
+        }
+    }
+}
