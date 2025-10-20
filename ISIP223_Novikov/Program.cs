@@ -1,453 +1,347 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace UniversityManagement
+namespace TextRoguelike
 {
-    public abstract class Person
-    {
-        private static int nextId = 1;
-        public int Id { get; }
-        public string Name { get; private set; }
-        public int Age { get; private set; }
-        public string Contact { get; private set; }
-
-        protected Person(string name, int age, string contact)
-        {
-            Id = nextId++;
-            SetName(name);
-            SetAge(age);
-            SetContact(contact);
-        }
-
-        public void SetName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Имя не может быть пустым.");
-            Name = name.Trim();
-        }
-
-        public void SetAge(int age)
-        {
-            if (age <= 0 || age > 120)
-                throw new ArgumentException("Возраст должен быть в диапазоне 1..120.");
-            Age = age;
-        }
-
-        public void SetContact(string contact)
-        {
-            Contact = contact?.Trim() ?? string.Empty;
-        }
-
-        public override string ToString()
-        {
-            return $"{Name} (Id: {Id}), Age: {Age}, Contact: {Contact}";
-        }
-    }
-
-    public class Student : Person
-    {
-        private readonly List<int> courseIds = new List<int>();
-
-        public Student(string name, int age, string contact) : base(name, age, contact) { }
-
-        internal void Enroll(int courseId)
-        {
-            if (!courseIds.Contains(courseId))
-                courseIds.Add(courseId);
-        }
-
-        internal void Unenroll(int courseId)
-        {
-            courseIds.Remove(courseId);
-        }
-
-        public IReadOnlyCollection<int> CourseIds => courseIds.AsReadOnly();
-
-        public override string ToString()
-        {
-            return $"Student: {base.ToString()}";
-        }
-    }
-
-    public class Teacher : Person
-    {
-        private readonly List<int> teachingCourseIds = new List<int>();
-
-        public Teacher(string name, int age, string contact) : base(name, age, contact) { }
-
-        internal void AssignCourse(int courseId)
-        {
-            if (!teachingCourseIds.Contains(courseId))
-                teachingCourseIds.Add(courseId);
-        }
-
-        internal void UnassignCourse(int courseId)
-        {
-            teachingCourseIds.Remove(courseId);
-        }
-
-        public IReadOnlyCollection<int> TeachingCourseIds => teachingCourseIds.AsReadOnly();
-
-        public override string ToString()
-        {
-            return $"Teacher: {base.ToString()}";
-        }
-    }
-
-    public class Course
-    {
-        private static int nextId = 1;
-        public int Id { get; }
-        public string Title { get; private set; }
-        public string Description { get; private set; }
-        public int? TeacherId { get; private set; }
-        private readonly List<int> studentIds = new List<int>();
-
-        public Course(string title, string description)
-        {
-            Id = nextId++;
-            SetTitle(title);
-            SetDescription(description);
-        }
-
-        public void SetTitle(string title)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-                throw new ArgumentException("Название курса не может быть пустым.");
-            Title = title.Trim();
-        }
-
-        public void SetDescription(string description)
-        {
-            Description = description?.Trim() ?? string.Empty;
-        }
-
-        internal void AssignTeacher(int teacherId)
-        {
-            TeacherId = teacherId;
-        }
-
-        internal void RemoveTeacher()
-        {
-            TeacherId = null;
-        }
-
-        internal void AddStudent(int studentId)
-        {
-            if (!studentIds.Contains(studentId))
-                studentIds.Add(studentId);
-        }
-
-        internal void RemoveStudent(int studentId)
-        {
-            studentIds.Remove(studentId);
-        }
-
-        public IReadOnlyCollection<int> StudentIds => studentIds.AsReadOnly();
-
-        public override string ToString()
-        {
-            var teacherPart = TeacherId.HasValue ? $"TeacherId: {TeacherId}" : "No teacher";
-            return $"Course: {Title} (Id: {Id}) - {teacherPart} - {studentIds.Count} students";
-        }
-    }
-
-    public class University
-    {
-        private readonly Dictionary<int, Student> students = new();
-        private readonly Dictionary<int, Teacher> teachers = new();
-        private readonly Dictionary<int, Course> courses = new();
-
-        public Student AddStudent(string name, int age, string contact)
-        {
-            var s = new Student(name, age, contact);
-            students[s.Id] = s;
-            return s;
-        }
-
-        public IEnumerable<Student> GetAllStudents() => students.Values;
-
-        public Student FindStudent(int id) => students.TryGetValue(id, out var s) ? s : null;
-
-        public Teacher AddTeacher(string name, int age, string contact)
-        {
-            var t = new Teacher(name, age, contact);
-            teachers[t.Id] = t;
-            return t;
-        }
-
-        public IEnumerable<Teacher> GetAllTeachers() => teachers.Values;
-
-        public Teacher FindTeacher(int id) => teachers.TryGetValue(id, out var t) ? t : null;
-
-        public Course AddCourse(string title, string description)
-        {
-            var c = new Course(title, description);
-            courses[c.Id] = c;
-            return c;
-        }
-
-        public IEnumerable<Course> GetAllCourses() => courses.Values;
-
-        public Course FindCourse(int id) => courses.TryGetValue(id, out var c) ? c : null;
-
-        public bool AssignTeacherToCourse(int teacherId, int courseId)
-        {
-            var t = FindTeacher(teacherId);
-            var c = FindCourse(courseId);
-            if (t == null || c == null) return false;
-            c.AssignTeacher(teacherId);
-            t.AssignCourse(courseId);
-            return true;
-        }
-
-        public bool EnrollStudentToCourse(int studentId, int courseId)
-        {
-            var s = FindStudent(studentId);
-            var c = FindCourse(courseId);
-            if (s == null || c == null) return false;
-            c.AddStudent(studentId);
-            s.Enroll(courseId);
-            return true;
-        }
-
-        public IEnumerable<Student> GetStudentsInCourse(int courseId)
-        {
-            var c = FindCourse(courseId);
-            if (c == null) yield break;
-            foreach (var sid in c.StudentIds)
-            {
-                var s = FindStudent(sid);
-                if (s != null) yield return s;
-            }
-        }
-
-        public IEnumerable<Course> GetCoursesOfStudent(int studentId)
-        {
-            var s = FindStudent(studentId);
-            if (s == null) yield break;
-            foreach (var cid in s.CourseIds)
-            {
-                var c = FindCourse(cid);
-                if (c != null) yield return c;
-            }
-        }
-    }
-
     class Program
     {
-        static University uni = new University();
-
         static void Main(string[] args)
         {
-            SeedSampleData();
-            RunMenu();
+            Game game = new Game();
+            game.Run();
+        }
+    }
+
+    public class Item
+    {
+        public string Name { get; set; }
+        public int Attack { get; set; }
+        public int Defense { get; set; }
+
+        public Item(string name, int attack = 0, int defense = 0)
+        {
+            Name = name;
+            Attack = attack;
+            Defense = defense;
+        }
+    }
+
+    public class Enemy
+    {
+        public string Name { get; set; }
+        public int HP { get; set; }
+        public int MaxHP { get; set; }
+        public int Attack { get; set; }
+        public int Defense { get; set; }
+        public string Type { get; set; }
+        public bool IsBoss { get; set; }
+        public int CritChancePercent { get; set; }
+        public int FreezeChancePercent { get; set; }
+
+        public Enemy(string name, int hp, int attack, int defense, string type, bool isBoss = false)
+        {
+            Name = name;
+            HP = hp;
+            MaxHP = hp;
+            Attack = attack;
+            Defense = defense;
+            Type = type;
+            IsBoss = isBoss;
+        }
+    }
+
+    public class Player
+    {
+        public int MaxHP { get; set; } = 100;
+        public int HP { get; set; } = 100;
+        public Item Weapon { get; set; }
+        public Item Armor { get; set; }
+        public bool Frozen { get; set; }
+        public bool DefendingThisTurn { get; set; }
+
+        public Player()
+        {
+            Weapon = new Item("Ничего", 1, 0);
+            Armor = new Item("Семейники деда", 0, 1);
         }
 
-        static void RunMenu()
-        {
-            while (true)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Универ");
-                Console.WriteLine("1. Добавить студента");
-                Console.WriteLine("2. Просмотреть всех студентов");
-                Console.WriteLine("3. Добавить преподавателя");
-                Console.WriteLine("4. Просмотреть всех преподавателей");
-                Console.WriteLine("5. Добавить курс");
-                Console.WriteLine("6. Просмотреть все курсы");
-                Console.WriteLine("7. Назначить преподавателя на курс");
-                Console.WriteLine("8. Записать студента на курс");
-                Console.WriteLine("9. Показать студентов на курсе");
-                Console.WriteLine("10. Показать курсы студента");
-                Console.WriteLine("11. Полные списки");
-                Console.WriteLine("0. Выход");
-                Console.Write("Выберите пункт: ");
-                var choice = Console.ReadLine()?.Trim();
+        public int TotalAttack => Weapon.Attack;
+        public int TotalDefense => Armor.Defense;
+    }
 
-                Console.WriteLine();
-                try
+    public class Game
+    {
+        private Player player;
+        private Random rnd;
+        private int turn;
+
+        private readonly Enemy goblinBase = new Enemy("Гоблин", 20, 8, 3, "goblin") { CritChancePercent = 20 };
+        private readonly Enemy skeletonBase = new Enemy("Скелет", 25, 7, 2, "skeleton");
+        private readonly Enemy mageBase = new Enemy("Маг", 15, 10, 1, "mage") { FreezeChancePercent = 20 };
+
+        public Game()
+        {
+            player = new Player();
+            rnd = new Random();
+            turn = 1;
+        }
+
+        public void Run()
+        {
+            Console.WriteLine("Вы отправляетесь в опасное подземелье...");
+
+            while (player.HP > 0)
+            {
+                Console.WriteLine($"Ход {turn}");
+                player.DefendingThisTurn = false;
+                DisplayPlayerStatus();
+
+                Console.WriteLine("Нажмите Enter для продолжения...");
+                Console.ReadLine();
+
+                if (rnd.Next(2) == 0)
                 {
-                    switch (choice)
-                    {
-                        case "1": AddStudent(); break;
-                        case "2": ListStudents(); break;
-                        case "3": AddTeacher(); break;
-                        case "4": ListTeachers(); break;
-                        case "5": AddCourse(); break;
-                        case "6": ListCourses(); break;
-                        case "7": AssignTeacher(); break;
-                        case "8": EnrollStudent(); break;
-                        case "9": ShowStudentsInCourse(); break;
-                        case "10": ShowCoursesOfStudent(); break;
-                        case "11": ShowAllLists(); break;
-                        case "0": return;
-                        default: Console.WriteLine("Неверный выбор."); break;
-                    }
+                    Enemy enemy = CreateEnemy();
+                    if (enemy.IsBoss)
+                        Console.WriteLine($"\n!!! Появился босс: {enemy.Name} !!!");
+                    else
+                        Console.WriteLine($"\nПоявился враг: {enemy.Name}");
+
+                    if (!Battle(enemy)) break;
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"Ошибка: {ex.Message}");
+                    OpenChest();
                 }
+
+                turn++;
             }
-        }
 
-        static void AddStudent()
-        {
-            Console.Write("Имя студента: ");
-            var name = Console.ReadLine();
-            var age = ReadInt("Возраст: ");
-            Console.Write("Контакт: ");
-            var contact = Console.ReadLine();
-
-            var s = uni.AddStudent(name, age, contact);
-            Console.WriteLine($"Добавлен студент: {s}.");
-        }
-
-        static void ListStudents()
-        {
-            var list = uni.GetAllStudents().ToList();
-            if (!list.Any()) { Console.WriteLine("Студентов нет."); return; }
-            Console.WriteLine("Список студентов:");
-            foreach (var s in list)
-                Console.WriteLine($"{s.Id}. {s.Name} | Age: {s.Age} | Contact: {s.Contact}");
-        }
-
-        static void AddTeacher()
-        {
-            Console.Write("Имя преподавателя: ");
-            var name = Console.ReadLine();
-            var age = ReadInt("Возраст: ");
-            Console.Write("Контакт: ");
-            var contact = Console.ReadLine();
-
-            var t = uni.AddTeacher(name, age, contact);
-            Console.WriteLine($"Добавлен преподаватель: {t}.");
-        }
-
-        static void ListTeachers()
-        {
-            var list = uni.GetAllTeachers().ToList();
-            if (!list.Any()) { Console.WriteLine("Преподавателей нет."); return; }
-            Console.WriteLine("Список преподавателей:");
-            foreach (var t in list)
-                Console.WriteLine($"{t.Id}. {t.Name} | Age: {t.Age} | Contact: {t.Contact}");
-        }
-
-        static void AddCourse()
-        {
-            Console.Write("Название курса: ");
-            var title = Console.ReadLine();
-            Console.Write("Описание курса: ");
-            var desc = Console.ReadLine();
-
-            var c = uni.AddCourse(title, desc);
-            Console.WriteLine($"Добавлен курс: {c.Title} (Id: {c.Id})");
-        }
-
-        static void ListCourses()
-        {
-            var list = uni.GetAllCourses().ToList();
-            if (!list.Any()) { Console.WriteLine("Курсов нет."); return; }
-            Console.WriteLine("Список курсов:");
-            foreach (var c in list)
+            if (player.HP <= 0)
             {
-                var teacher = c.TeacherId.HasValue ? (uni.FindTeacher(c.TeacherId.Value)?.Name ?? "Unknown") : "не назначен";
-                Console.WriteLine($"{c.Id}. {c.Title} | Teacher: {teacher} | Students: {c.StudentIds.Count}");
+                Console.WriteLine("\nВы погибли...");
+                Console.WriteLine($"Вы продержались {turn} ходов");
             }
-        }
-
-        static void AssignTeacher()
-        {
-            Console.WriteLine("Выберите преподавателя (Id):");
-            ListTeachers();
-            var tId = ReadInt("Id преподавателя: ");
-            Console.WriteLine("Выберите курс (Id):");
-            ListCourses();
-            var cId = ReadInt("Id курса: ");
-
-            var ok = uni.AssignTeacherToCourse(tId, cId);
-            Console.WriteLine(ok ? "Преподаватель назначен." : "Не удалось назначить.");
-        }
-
-        static void EnrollStudent()
-        {
-            Console.WriteLine("Выберите студента (Id):");
-            ListStudents();
-            var sId = ReadInt("Id студента: ");
-            Console.WriteLine("Выберите курс (Id):");
-            ListCourses();
-            var cId = ReadInt("Id курса: ");
-
-            var ok = uni.EnrollStudentToCourse(sId, cId);
-            Console.WriteLine(ok ? "Студент записан на курс." : "Не удалось записать.");
-        }
-
-        static void ShowStudentsInCourse()
-        {
-            Console.WriteLine("Выберите курс (Id):");
-            ListCourses();
-            var cId = ReadInt("Id курса: ");
-            var students = uni.GetStudentsInCourse(cId).ToList();
-            if (!students.Any()) { Console.WriteLine("На курсе нет студентов."); return; }
-            Console.WriteLine("Студенты на курсе:");
-            foreach (var s in students)
-                Console.WriteLine($"{s.Id}. {s.Name} | Contact: {s.Contact}");
-        }
-
-        static void ShowCoursesOfStudent()
-        {
-            Console.WriteLine("Выберите студента (Id):");
-            ListStudents();
-            var sId = ReadInt("Id студента: ");
-            var courses = uni.GetCoursesOfStudent(sId).ToList();
-            if (!courses.Any()) { Console.WriteLine("У студента нет курсов."); return; }
-            Console.WriteLine("Курсы студента:");
-            foreach (var c in courses)
-                Console.WriteLine($"{c.Id}. {c.Title} | Description: {c.Description}");
-        }
-
-        static void ShowAllLists()
-        {
-            Console.WriteLine("Все студенты");
-            ListStudents();
-            Console.WriteLine();
-            Console.WriteLine("Все преподаватели");
-            ListTeachers();
-            Console.WriteLine();
-            Console.WriteLine("Все курсы");
-            ListCourses();
-        }
-
-        static int ReadInt(string prompt)
-        {
-            while (true)
+            else
             {
-                Console.Write(prompt);
-                if (int.TryParse(Console.ReadLine(), out var val)) return val;
-                Console.WriteLine("Неверный ввод.");
+                Console.WriteLine("\nВы решили вернуться домой...");
+                Console.WriteLine($"Итог: {turn} ходов, {player.HP} HP");
             }
         }
 
-        static void SeedSampleData()
+        private void DisplayPlayerStatus()
         {
-            var t1 = uni.AddTeacher("Иван Петров", 45, "ivan.petrov@example.com");
-            var t2 = uni.AddTeacher("Мария Смирнова", 38, "m.smirnova@example.com");
+            Console.WriteLine($"HP: {HPBar(player.HP, player.MaxHP)}  {player.HP}/{player.MaxHP}");
+            Console.WriteLine($"Оружие: {player.Weapon.Name} (+{player.Weapon.Attack} атаки)");
+            Console.WriteLine($"Броня: {player.Armor.Name} (+{player.Armor.Defense} защиты)");
+        }
 
-            var c1 = uni.AddCourse("Алгоритмы и структуры данных", "Базовый курс по алгоритмам.");
-            var c2 = uni.AddCourse("Базы данных", "Введение в реляционные СУБД и SQL.");
-            var c3 = uni.AddCourse("Операционные системы", "Основы ОС и управление процессами.");
+        private string HPBar(int current, int max, int length = 20)
+        {
+            if (max <= 0) max = 1;
+            current = Math.Max(0, Math.Min(current, max));
+            double fraction = (double)current / max;
+            int filled = (int)Math.Round(fraction * length);
 
-            uni.AssignTeacherToCourse(t1.Id, c1.Id);
-            uni.AssignTeacherToCourse(t2.Id, c2.Id);
+            string filledPart = new string('#', filled);
+            string emptyPart = new string(' ', length - filled);
 
-            var s1 = uni.AddStudent("Андрей Водяной", 20, "andrey@example.com");
-            var s2 = uni.AddStudent("Ольга Иванова", 19, "olga@example.com");
+            return $"[{filledPart}{emptyPart}]";
+        }
 
-            uni.EnrollStudentToCourse(s1.Id, c1.Id);
-            uni.EnrollStudentToCourse(s1.Id, c2.Id);
-            uni.EnrollStudentToCourse(s2.Id, c2.Id);
+        private Enemy CreateEnemy()
+        {
+            if (turn % 10 == 0) return CreateBoss();
+
+            int pick = rnd.Next(3);
+            if (pick == 0) return CloneEnemy(goblinBase);
+            if (pick == 1) return CloneEnemy(skeletonBase);
+            return CloneEnemy(mageBase);
+        }
+
+        private Enemy CreateBoss()
+        {
+            var bosses = new List<Enemy>();
+
+            var vvg = CloneEnemy(goblinBase);
+            vvg.Name = "ВВГ";
+            vvg.IsBoss = true;
+            vvg.MaxHP = (int)(goblinBase.MaxHP * 2.0);
+            vvg.HP = vvg.MaxHP;
+            vvg.Attack = (int)Math.Round(goblinBase.Attack * 1.5);
+            vvg.Defense = (int)Math.Round(goblinBase.Defense * 1.2);
+            vvg.CritChancePercent = goblinBase.CritChancePercent + 10;
+            bosses.Add(vvg);
+
+            var kov = CloneEnemy(skeletonBase);
+            kov.Name = "Ковальский";
+            kov.IsBoss = true;
+            kov.MaxHP = (int)(skeletonBase.MaxHP * 2.5);
+            kov.HP = kov.MaxHP;
+            kov.Attack = (int)Math.Round(skeletonBase.Attack * 1.3);
+            kov.Defense = (int)Math.Round(skeletonBase.Defense * 1.4);
+            bosses.Add(kov);
+
+            var archmage = CloneEnemy(mageBase);
+            archmage.Name = "Архимаг C++";
+            archmage.IsBoss = true;
+            archmage.MaxHP = (int)(mageBase.MaxHP * 1.8);
+            archmage.HP = archmage.MaxHP;
+            archmage.Attack = (int)Math.Round(mageBase.Attack * 1.6);
+            archmage.Defense = (int)Math.Round(mageBase.Defense * 1.1);
+            archmage.FreezeChancePercent = mageBase.FreezeChancePercent + 10;
+            bosses.Add(archmage);
+
+            var pestov = CloneEnemy(skeletonBase);
+            pestov.Name = "Пестов С--";
+            pestov.IsBoss = true;
+            pestov.MaxHP = (int)(skeletonBase.MaxHP * 1.3);
+            pestov.HP = pestov.MaxHP;
+            pestov.Attack = (int)Math.Round(skeletonBase.Attack * 1.8);
+            pestov.Defense = (int)Math.Round(skeletonBase.Defense * 0.6);
+            pestov.FreezeChancePercent = mageBase.FreezeChancePercent + 15;
+            bosses.Add(pestov);
+
+            return bosses[rnd.Next(bosses.Count)];
+        }
+
+        private Enemy CloneEnemy(Enemy baseEnemy)
+        {
+            return new Enemy(baseEnemy.Name, baseEnemy.MaxHP, baseEnemy.Attack, baseEnemy.Defense, baseEnemy.Type, baseEnemy.IsBoss)
+            {
+                CritChancePercent = baseEnemy.CritChancePercent,
+                FreezeChancePercent = baseEnemy.FreezeChancePercent
+            };
+        }
+
+        private bool Battle(Enemy enemy)
+        {
+            Console.WriteLine($"\n=== Бой с {enemy.Name} ===");
+            Console.WriteLine($"Ваше HP:  {HPBar(player.HP, player.MaxHP)}  {player.HP}/{player.MaxHP}");
+            Console.WriteLine($"HP врага: {HPBar(enemy.HP, enemy.MaxHP)}  {enemy.HP}/{enemy.MaxHP}");
+
+            while (player.HP > 0 && enemy.HP > 0)
+            {
+                if (player.Frozen)
+                {
+                    Console.WriteLine("Вы заморожены и пропускаете ход!");
+                    player.Frozen = false;
+                }
+                else
+                {
+                    Console.WriteLine("\nВыберите действие:");
+                    Console.WriteLine("1 - Атака");
+                    Console.WriteLine("2 - Защита");
+                    string choice = Console.ReadLine();
+
+                    if (choice == "1") PlayerAttack(enemy);
+                    else if (choice == "2") player.DefendingThisTurn = true;
+                }
+
+                if (enemy.HP <= 0)
+                {
+                    Console.WriteLine($"{enemy.Name} побеждён!");
+                    break;
+                }
+
+                EnemyAttack(enemy);
+
+                Console.WriteLine($"\nВаше HP:  {HPBar(player.HP, player.MaxHP)}  {player.HP}/{player.MaxHP}");
+                Console.WriteLine($"HP врага: {HPBar(enemy.HP, enemy.MaxHP)}  {enemy.HP}/{enemy.MaxHP}");
+            }
+
+            return player.HP > 0;
+        }
+
+        private void PlayerAttack(Enemy enemy)
+        {
+            int damage = player.TotalAttack;
+            enemy.HP -= damage;
+            Console.WriteLine($"Вы наносите {damage} урона.");
+        }
+
+        private void EnemyAttack(Enemy enemy)
+        {
+            int baseDamage = enemy.Attack;
+
+            if (enemy.CritChancePercent > 0 && rnd.Next(100) < enemy.CritChancePercent)
+            {
+                baseDamage *= 2;
+                Console.WriteLine("Критический удар врага!");
+            }
+
+            if (player.DefendingThisTurn && rnd.Next(100) < 40)
+            {
+                Console.WriteLine("Вы успешно увернулись от атаки!");
+                player.DefendingThisTurn = false;
+                return;
+            }
+
+            if (enemy.Type == "skeleton")
+            {
+                player.HP -= baseDamage;
+                Console.WriteLine($"Скелет наносит {baseDamage} урона (игнорирует броню).");
+            }
+            else
+            {
+                int blockedAmount = (int)(player.TotalDefense * (rnd.Next(70, 101) / 100.0));
+                int finalDamage = Math.Max(0, baseDamage - blockedAmount);
+                player.HP -= finalDamage;
+                Console.WriteLine($"Враг наносит {baseDamage} урона. Блокировано: {blockedAmount}. Вы получаете: {finalDamage} урона.");
+            }
+
+            if (enemy.FreezeChancePercent > 0 && rnd.Next(100) < enemy.FreezeChancePercent)
+            {
+                player.Frozen = true;
+                Console.WriteLine("Враг наложил заморозку — вы пропустите следующий ход!");
+            }
+
+            player.DefendingThisTurn = false;
+        }
+
+        private void OpenChest()
+        {
+            var items = new List<Item>
+            {
+                new Item("Лечебное зелье"),
+                new Item("Меч воина", 15, 0),
+                new Item("Кинжал разбойника", 12, 0),
+                new Item("Посох мага", 10, 0),
+                new Item("Кожаная броня", 0, 8),
+                new Item("Кольчуга", 0, 12),
+                new Item("Мантия мага", 0, 6)
+            };
+
+            Item drop = items[rnd.Next(items.Count)];
+            Console.WriteLine($"\nВы открыли сундук и нашли: {drop.Name}");
+
+            if (drop.Name == "Лечебное зелье")
+            {
+                player.HP = player.MaxHP;
+                Console.WriteLine("Зелье восстанавливает здоровье до максимума!");
+                return;
+            }
+
+            if (drop.Attack > 0)
+            {
+                Console.WriteLine($"Оружие: Атака +{drop.Attack}");
+                Console.WriteLine($"Текущее оружие: {player.Weapon.Name} (Атака +{player.Weapon.Attack})");
+            }
+            else
+            {
+                Console.WriteLine($"Доспехи: Защита +{drop.Defense}");
+                Console.WriteLine($"Текущие доспехи: {player.Armor.Name} (Защита +{player.Armor.Defense})");
+            }
+
+            Console.WriteLine("1 - Взять предмет");
+            Console.WriteLine("2 - Выбросить предмет");
+
+            if (Console.ReadLine() == "1")
+            {
+                if (drop.Attack > 0) player.Weapon = drop;
+                else player.Armor = drop;
+                Console.WriteLine("Предмет экипирован.");
+            }
         }
     }
 }
