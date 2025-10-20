@@ -216,7 +216,7 @@ namespace TextRoguelike
 
         private bool Battle(Enemy enemy)
         {
-            Console.WriteLine($"\n=== Бой с {enemy.Name} ===");
+            Console.WriteLine($"Бой с {enemy.Name}");
             Console.WriteLine($"Ваше HP:  {HPBar(player.HP, player.MaxHP)}  {player.HP}/{player.MaxHP}");
             Console.WriteLine($"HP врага: {HPBar(enemy.HP, enemy.MaxHP)}  {enemy.HP}/{enemy.MaxHP}");
 
