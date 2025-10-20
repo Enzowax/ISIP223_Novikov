@@ -72,6 +72,7 @@ namespace TextRoguelike
     public class Game
     {
         private Player player;
+
         private Random rnd;
         private int turn;
 
