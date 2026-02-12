@@ -1,75 +1,105 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace StoreInventory
+class TextStatistics
 {
-    // Перечисление категорий товаров (на русском языке)
-    enum Category
+    public string ShortestWord;
+    public string LongestWord;
+    public int WordCount;
+    public int SentenceCount;
+    public int VowelCount;
+    public int ConsonantCount;
+    public Dictionary<char, int> LetterFrequency = new Dictionary<char, int>();
+
+    // Вывод статистики по тексту
+    public void Print()
     {
-        Еда,
-        Электроника,
-        Одежда
+        Console.WriteLine("=== Статистика текста ===");
+        Console.WriteLine($"Количество слов: {WordCount}");
+        Console.WriteLine($"Количество предложений: {SentenceCount}");
+        Console.WriteLine($"Самое короткое слово: {ShortestWord}");
+        Console.WriteLine($"Самое длинное слово: {LongestWord}");
+        Console.WriteLine($"Гласных букв: {VowelCount}");
+        Console.WriteLine($"Согласных букв: {ConsonantCount}");
+        Console.WriteLine("Частота букв:");
+        foreach (var pair in LetterFrequency)
+        {
+            Console.WriteLine($"{pair.Key}: {pair.Value}");
+        }
+    }
+}
+
+class Program
+{
+    // Проверка, является ли символ гласной
+    static bool IsVowel(char c)
+    {
+        char lower = Char.ToLower(c);
+        return "аеёиоуыэюя".IndexOf(lower) >= 0;
     }
 
-    // Класс описывающий товар
-    class Product
+    static TextStatistics AnalyzeText(string text)
     {
-        private static int counter = 1; // Счётчик для генерации уникального кода
-        public int Code { get; private set; }        // Уникальный код товара
-        public string Name { get; private set; }     // Название товара
-        public decimal Price { get; private set; }   // Цена
-        public int Quantity { get; private set; }    // Количество на складе
-        public bool InStock => Quantity > 0;         // Есть ли товар в наличии
-        public Category Category { get; private set; } // Категория товара
+        TextStatistics stats = new TextStatistics();
 
-        // Конструктор
-        public Product(string name, decimal price, int quantity, Category category)
+        string[] words = text.Split(new char[] { ' ', ',', '.', '!', '?', ';', ':', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+        stats.WordCount = words.Length;
+
+        // Поиск самого короткого и длинного слова
+        stats.ShortestWord = words[0];
+        stats.LongestWord = words[0];
+
+        for (int i = 0; i < words.Length; i++)
         {
-            // Проверка на корректность данных
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Название товара не может быть пустым!");
-            if (price < 0)
-                throw new ArgumentException("Цена не может быть отрицательной!");
-            if (quantity < 0)
-                throw new ArgumentException("Количество не может быть отрицательным!");
-
-            Code = counter++; // Автоматическая генерация кода
-            Name = name;
-            Price = price;
-            Quantity = quantity;
-            Category = category;
+            string w = words[i];
+            if (w.Length < stats.ShortestWord.Length) stats.ShortestWord = w;
+            if (w.Length > stats.LongestWord.Length) stats.LongestWord = w;
         }
 
-        // Метод для пополнения склада
-        public void AddStock(int amount)
-        {
-            if (amount <= 0)
-            {
-                Console.WriteLine("Количество должно быть положительным!");
-                return;
-            }
-            Quantity += amount;
-        }
+        // Подсчёт предложений
+        string[] sentences = text.Split(new char[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+        stats.SentenceCount = sentences.Length;
 
-        // Метод для продажи товара
-        public bool Sell(int amount)
+        // Подсчёт гласных и согласных + статистика по буквам
+        foreach (char c in text)
         {
-            if (amount <= 0)
+            if (Char.IsLetter(c))
             {
-                Console.WriteLine("Количество должно быть положительным!");
-                return false;
-            }
-            if (Quantity >= amount)
-            {
-                Quantity -= amount;
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Недостаточно товара на складе!");
-                return false;
+                char lower = Char.ToLower(c);
+
+                if (IsVowel(lower)) stats.VowelCount++;
+                else stats.ConsonantCount++;
+
+                if (!stats.LetterFrequency.ContainsKey(lower))
+                    stats.LetterFrequency[lower] = 0;
+                stats.LetterFrequency[lower]++;
             }
         }
 
+        return stats;
+    }
 
+    static void Main()
+    {
+        List<TextStatistics> history = new List<TextStatistics>();
+
+        while (true)
+        {
+            Console.WriteLine("\nВведите текст (минимум 100 символов):");
+            string input = Console.ReadLine();
+
+            if (input.Length < 100)
+            {
+                Console.WriteLine("Ошибка: текст слишком короткий!");
+                continue;
+            }
+
+            TextStatistics result = AnalyzeText(input);
+            history.Add(result);
+
+            result.Print();
+
+        }
+    }
+}
